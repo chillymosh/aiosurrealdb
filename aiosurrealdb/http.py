@@ -18,12 +18,36 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Any
+from typing import Any, Callable
 
 import aiohttp
-from exceptions import SurrealException
+from .exceptions import SurrealException
+
+try:
+    import orjson  # type: ignore
+except ModuleNotFoundError:
+    HAS_ORJSON: bool = False # type: ignore
+else:
+    HAS_ORJSON: bool = True
+
+
 
 __all__ = ("SurrealHTTP",)
+
+
+if HAS_ORJSON:
+
+    def _to_json(obj: Any) -> str:
+        return orjson.dumps(obj).decode('utf-8') # type: ignore
+
+    _from_json = orjson.loads # type: ignore
+
+else:
+
+    def _to_json(obj: Any) -> str:
+        return json.dumps(obj, separators=(',', ':'), ensure_ascii=True)
+
+    _from_json: Callable[..., Any] = json.loads
 
 
 @dataclass(frozen=True)
@@ -62,21 +86,21 @@ class SurrealHTTP:
         password: str,
         session: aiohttp.ClientSession | None = None,
     ) -> None:
-        self._url = url
-        self._namespace = namespace
-        self._database = database
-        self._username = username
-        self._password = password
+        self._url: str = url
+        self._namespace: str = namespace
+        self._database: str = database
+        self._username: str = username
+        self._password: str = password
 
         if session is None:
             self._session = aiohttp.ClientSession()
             self._should_close_session = True
         else:
-            self._session = session
+            self._session: aiohttp.ClientSession = session
             self._should_close_session = False
 
     def _generate_headers_and_auth(self) -> tuple[dict[str, str], aiohttp.BasicAuth]:
-        headers = {
+        headers: dict[str, str] = {
             "NS": self._namespace,
             "DB": self._database,
             "Accept": "application/json",
@@ -111,7 +135,7 @@ class SurrealHTTP:
         params: Any = None,
     ) -> Any:
         headers, auth = self._generate_headers_and_auth()
-        data = json.dumps(data) if isinstance(data, dict) else data
+        data = _to_json(data) if isinstance(data, dict) else data
         try:
             async with self._session.request(
                 method=method,
@@ -122,18 +146,18 @@ class SurrealHTTP:
                 auth=auth,
             ) as response:
                 if response.status >= 400:
-                    message = await response.text()
+                    message: str = await response.text()
                     raise SurrealException(
                         f"HTTP request failed with status {response.status}. Server response: {message}"
                     )
                 data = await response.text()
-                return json.loads(data) if data else None
+                return _from_json(data) if data else None
         except Exception as e:
             raise SurrealException("Failed to complete the request.") from e
 
     async def _modify(self, method: str, thing: str, data: Any = None) -> Any:
         table, record_id = thing.split(":") if ":" in thing else (thing, None)
-        response = await self._request(
+        response: Any = await self._request(
             method=method,
             uri=f"/key/{table}/{record_id}" if record_id else f"/key/{table}",
             data=data,
@@ -151,7 +175,7 @@ class SurrealHTTP:
         Examples:
             await db.signup({"user": "bob", "pass": "123456"})
         """
-        return await self._request(method="POST", uri="/signup", data=json.dumps(vars))
+        return await self._request(method="POST", uri="/signup", data=_to_json(vars))
 
     async def signin(self, vars: dict[str, Any]) -> str:
         """Sign this connection in to a specific authentication scope.
@@ -162,7 +186,7 @@ class SurrealHTTP:
         Examples:
             await db.signin({"user": "root", "pass": "root"})
         """
-        return await self._request(method="POST", uri="/signin", data=json.dumps(vars))
+        return await self._request(method="POST", uri="/signin", data=_to_json(vars))
 
     async def query(
         self, sql: str, vars: dict[str, Any] | None = None
@@ -209,7 +233,7 @@ class SurrealHTTP:
                 person = await db.select('person:h5wxrf2ewk8xjxosxtyc')
         """
         table, record_id = thing.split(":") if ":" in thing else (thing, None)
-        response = await self._request(
+        response: Any = await self._request(
             method="GET",
             uri=f"/key/{table}/{record_id}" if record_id else f"/key/{table}",
         )

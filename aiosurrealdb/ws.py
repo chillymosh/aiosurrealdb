@@ -22,7 +22,7 @@ from typing import Any
 
 import aiohttp
 import pydantic
-from exceptions import (
+from .exceptions import (
     SurrealAuthenticationException,
     SurrealException,
     SurrealPermissionException,
@@ -65,10 +65,10 @@ class Request(pydantic.BaseModel):
 
     id: str
     method: str
-    params: tuple | None = None
+    params: tuple[Any, ...] | None = None
 
     @pydantic.validator("params", pre=True, always=True)
-    def validate_params(cls, value):  # pylint: disable=no-self-argument
+    def validate_params(cls, value: Any) -> tuple[()] | Any:  # pylint: disable=no-self-argument
         """Validate the parameters of the request."""
         return () if value is None else value
 
@@ -171,9 +171,10 @@ class Surreal:
     """
 
     def __init__(self, url: str) -> None:
-        self.url = url
+        self.url: str = url
         self.client_state = ConnectionState.CONNECTING
         self.token: str | None = None
+        self.session: aiohttp.ClientSession | None = None
         self.ws: aiohttp.ClientWebSocketResponse | None = None
 
     async def __aenter__(self) -> Surreal:
@@ -203,7 +204,7 @@ class Surreal:
     async def connect(self) -> None:
         """Create a ClientSession and connect to the websocket."""
         self.session = aiohttp.ClientSession()
-        self.ws = await self.session.ws_connect(self.url)
+        self.ws = await self.session.ws_connect(self.url) # type: ignore
         self.client_state = ConnectionState.CONNECTED
 
     async def close(self) -> None:
@@ -224,7 +225,7 @@ class Surreal:
         Examples:
             await db.use('test', 'test')
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(id=generate_uuid(), method="use", params=(namespace, database)),
         )
         _validate_response(response)
@@ -238,12 +239,10 @@ class Surreal:
         Examples:
             await db.signup({"user": "bob", "pass": "123456"})
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(id=generate_uuid(), method="signup", params=(vars,)),
         )
-        success: ResponseSuccess = _validate_response(
-            response, SurrealAuthenticationException
-        )
+        success: ResponseSuccess = _validate_response(response, SurrealAuthenticationException)
         token: str = success.result
         self.token = token
         return self.token
@@ -257,19 +256,17 @@ class Surreal:
         Examples:
             await db.signin({"user": "root", "pass": "root"})
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(id=generate_uuid(), method="signin", params=(vars,)),
         )
-        success: ResponseSuccess = _validate_response(
-            response, SurrealAuthenticationException
-        )
+        success: ResponseSuccess = _validate_response(response, SurrealAuthenticationException)
         token: str = success.result
         self.token = token
         return self.token
 
     async def invalidate(self) -> None:
         """Invalidate the authentication for the current connection."""
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(
                 id=generate_uuid(),
                 method="invalidate",
@@ -287,7 +284,7 @@ class Surreal:
         Examples:
             await db.authenticate('JWT token here')
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(id=generate_uuid(), method="authenticate", params=(token,)),
         )
         _validate_response(response, SurrealAuthenticationException)
@@ -308,7 +305,7 @@ class Surreal:
             Use the variable in a subsequent query
                 await db.query('create person set name = $name')
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(
                 id=generate_uuid(),
                 method="let",
@@ -318,9 +315,7 @@ class Surreal:
                 ),
             ),
         )
-        success: ResponseSuccess = _validate_response(
-            response, SurrealPermissionException
-        )
+        success: ResponseSuccess = _validate_response(response, SurrealPermissionException)
         return success.result
 
     async def set(self, key: str, value: Any) -> None:
@@ -330,7 +325,7 @@ class Surreal:
             key: Specifies the name of the variable.
             value: Assigns the value to the variable name.
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(
                 id=generate_uuid(),
                 method="let",
@@ -340,14 +335,10 @@ class Surreal:
                 ),
             ),
         )
-        success: ResponseSuccess = _validate_response(
-            response, SurrealPermissionException
-        )
+        success: ResponseSuccess = _validate_response(response, SurrealPermissionException)
         return success.result
 
-    async def query(
-        self, sql: str, vars: dict[str, Any] | None = None
-    ) -> list[dict[str, Any]]:
+    async def query(self, sql: str, vars: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """Run a set of SurrealQL statements against the database.
 
         Args:
@@ -367,7 +358,7 @@ class Surreal:
             Get all of the results from the second query
                 result[1]['result']
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(
                 id=generate_uuid(),
                 method="query",
@@ -397,15 +388,13 @@ class Surreal:
             Select a specific record from a table (or other entity)
                 person = await db.select('person:h5wxrf2ewk8xjxosxtyc')
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(id=generate_uuid(), method="select", params=(thing,)),
         )
         success: ResponseSuccess = _validate_response(response)
         return success.result
 
-    async def create(
-        self, thing: str, data: dict[str, Any] | None = None
-    ) -> list[dict[str, Any]]:
+    async def create(self, thing: str, data: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """Create a record in the database.
 
         This function will run the following query in the database:
@@ -428,21 +417,17 @@ class Surreal:
                         },
                 })
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(
                 id=generate_uuid(),
                 method="create",
                 params=(thing,) if data is None else (thing, data),
             ),
         )
-        success: ResponseSuccess = _validate_response(
-            response, SurrealPermissionException
-        )
+        success: ResponseSuccess = _validate_response(response, SurrealPermissionException)
         return success.result
 
-    async def update(
-        self, thing: str, data: dict[str, Any] | None
-    ) -> list[dict[str, Any]]:
+    async def update(self, thing: str, data: dict[str, Any] | None) -> list[dict[str, Any]]:
         """Update all records in a table, or a specific record, in the database.
 
         This function replaces the current document / record data with the
@@ -468,21 +453,17 @@ class Surreal:
                         },
                 })
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(
                 id=generate_uuid(),
                 method="update",
                 params=(thing,) if data is None else (thing, data),
             ),
         )
-        success: ResponseSuccess = _validate_response(
-            response, SurrealPermissionException
-        )
+        success: ResponseSuccess = _validate_response(response, SurrealPermissionException)
         return success.result
 
-    async def merge(
-        self, thing: str, data: dict[str, Any] | None
-    ) -> list[dict[str, Any]]:
+    async def merge(self, thing: str, data: dict[str, Any] | None) -> list[dict[str, Any]]:
         """Modify by deep merging all records in a table, or a specific record, in the database.
 
         This function merges the current document / record data with the
@@ -510,21 +491,17 @@ class Surreal:
                     })
 
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(
                 id=generate_uuid(),
                 method="change",
                 params=(thing,) if data is None else (thing, data),
             ),
         )
-        success: ResponseSuccess = _validate_response(
-            response, SurrealPermissionException
-        )
+        success: ResponseSuccess = _validate_response(response, SurrealPermissionException)
         return success.result
 
-    async def patch(
-        self, thing: str, data: dict[str, Any] | None
-    ) -> list[dict[str, Any]]:
+    async def patch(self, thing: str, data: dict[str, Any] | None) -> list[dict[str, Any]]:
         """Apply JSON Patch changes to all records, or a specific record, in the database.
 
         This function patches the current document / record data with
@@ -549,16 +526,14 @@ class Surreal:
                 { 'op': "remove", "path": "/temp" },
             ])
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(
                 id=generate_uuid(),
                 method="modify",
                 params=(thing,) if data is None else (thing, data),
             ),
         )
-        success: ResponseSuccess = _validate_response(
-            response, SurrealPermissionException
-        )
+        success: ResponseSuccess = _validate_response(response, SurrealPermissionException)
         return success.result
 
     async def delete(self, thing: str) -> list[dict[str, Any]]:
@@ -576,12 +551,10 @@ class Surreal:
             Delete a specific record from a table
                 await db.delete('person:h5wxrf2ewk8xjxosxtyc')
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(id=generate_uuid(), method="delete", params=(thing,)),
         )
-        success: ResponseSuccess = _validate_response(
-            response, SurrealPermissionException
-        )
+        success: ResponseSuccess = _validate_response(response, SurrealPermissionException)
         return success.result
 
     # ------------------------------------------------------------------------
@@ -593,7 +566,7 @@ class Surreal:
         Returns:
             The information of the Surreal server.
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(
                 id=generate_uuid(),
                 method="info",
@@ -611,7 +584,7 @@ class Surreal:
         Returns:
             The records.
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(id=generate_uuid(), method="live", params=(table,)),
         )
         success: ResponseSuccess = _validate_response(response)
@@ -619,7 +592,7 @@ class Surreal:
 
     async def ping(self) -> bool:
         """Ping the Surreal server."""
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(
                 id=generate_uuid(),
                 method="ping",
@@ -634,7 +607,7 @@ class Surreal:
         Args:
             query: The query to kill.
         """
-        response = await self._send_receive(
+        response: ResponseSuccess | ResponseError = await self._send_receive(
             Request(id=generate_uuid(), method="kill", params=(query,)),
         )
         success: ResponseSuccess = _validate_response(response)
@@ -683,7 +656,7 @@ class Surreal:
         """
         self._validate_connection()
         assert self.ws is not None
-        response = await self.ws.receive_json()
+        response: Any = await self.ws.receive_json()
         if response.get("error"):
             return ResponseError(**response["error"])
         return ResponseSuccess(**response)

@@ -1,0 +1,13 @@
+[project]
+name = "aiosurrealdb"
+version = 1.0
+description = "aiohttp verison of the surrealdb python library"
+author = "Chillymosh"
+author_email = "chillymosh@gmail.com"
+
+[project.urls]
+"Homepage" = "https://github.com/chillymosh/aio-surrealdb"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+

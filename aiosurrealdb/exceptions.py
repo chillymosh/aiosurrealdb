@@ -14,6 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+__all__ = (
+    "SurrealException",
+    "SurrealAuthenticationException",
+    "SurrealPermissionException",
+)
+
 
 class SurrealException(Exception):
     """Base exception for aioSurrealDB client library."""
