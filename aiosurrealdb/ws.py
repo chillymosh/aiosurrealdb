@@ -22,6 +22,7 @@ from typing import Any
 
 import aiohttp
 import pydantic
+
 from .exceptions import (
     SurrealAuthenticationException,
     SurrealException,

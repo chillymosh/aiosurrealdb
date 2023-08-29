@@ -21,6 +21,7 @@ from types import TracebackType
 from typing import Any, Callable
 
 import aiohttp
+
 from .exceptions import SurrealException
 
 try:

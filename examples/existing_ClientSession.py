@@ -1,4 +1,5 @@
 import aiohttp
+
 from aiosurrealdb import SurrealHTTP
 
 
@@ -69,3 +70,9 @@ async def main():
                 )
             )
             print(await db.query("delete person"))
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(main())

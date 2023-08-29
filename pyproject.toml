@@ -20,7 +20,7 @@ speedup = [
     "orjson>=3.7.11",
     "aiodns>=3.0.0",
     "Brotli",
-    'cchardet==2.1.7<3; python_version < "3.10"',
+    'cchardet>=2.1.7,<3; python_version < "3.10"',
 ]
 
 [tool.setuptools.dynamic]
