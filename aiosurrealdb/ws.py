@@ -204,7 +204,7 @@ class Surreal:
     async def connect(self) -> None:
         """Create a ClientSession and connect to the websocket."""
         self.session = aiohttp.ClientSession()
-        self.ws = await self.session.ws_connect(self.url) # type: ignore
+        self.ws = await self.session.ws_connect(self.url)  # type: ignore
         self.client_state = ConnectionState.CONNECTED
 
     async def close(self) -> None:

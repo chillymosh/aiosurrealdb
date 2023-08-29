@@ -26,10 +26,9 @@ from .exceptions import SurrealException
 try:
     import orjson  # type: ignore
 except ModuleNotFoundError:
-    HAS_ORJSON: bool = False # type: ignore
+    HAS_ORJSON: bool = False  # type: ignore
 else:
     HAS_ORJSON: bool = True
-
 
 
 __all__ = ("SurrealHTTP",)
@@ -38,14 +37,14 @@ __all__ = ("SurrealHTTP",)
 if HAS_ORJSON:
 
     def _to_json(obj: Any) -> str:
-        return orjson.dumps(obj).decode('utf-8') # type: ignore
+        return orjson.dumps(obj).decode("utf-8")  # type: ignore
 
-    _from_json = orjson.loads # type: ignore
+    _from_json = orjson.loads  # type: ignore
 
 else:
 
     def _to_json(obj: Any) -> str:
-        return json.dumps(obj, separators=(',', ':'), ensure_ascii=True)
+        return json.dumps(obj, separators=(",", ":"), ensure_ascii=True)
 
     _from_json: Callable[..., Any] = json.loads
 
@@ -188,9 +187,7 @@ class SurrealHTTP:
         """
         return await self._request(method="POST", uri="/signin", data=_to_json(vars))
 
-    async def query(
-        self, sql: str, vars: dict[str, Any] | None = None
-    ) -> list[dict[str, Any]]:
+    async def query(self, sql: str, vars: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """Run a set of SurrealQL statements against the database.
 
         Args:

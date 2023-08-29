@@ -1,7 +1,9 @@
+import aiohttp
 from aiosurrealdb import SurrealHTTP
 
 
 async def main():
+    # This session could be created elsewhere and passed in as an argument.
     async with aiohttp.ClientSession() as session:
         async with SurrealHTTP(
             url="http://localhost:8000",
