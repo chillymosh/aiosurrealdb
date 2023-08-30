@@ -1,6 +1,6 @@
 # aiosurrealdb
 
-aiosurrealdb is a fully asynchronous version of the surrealdb driver that uses aiohttp.
+aiosurrealdb is a fully asynchronous version of the SurrealDB driver that uses aiohttp.
   
 The reason behind using aiohttp is that many modern async frameworks and libraries, especially for bots, such as those for Discord, already have aiohttp installed as a dependency. So it made more sense to utilise an already installed library and most likely an already exisitng ClientSession.
 
@@ -37,7 +37,7 @@ Getting Started
   
   
   async def main():
-      """Example of how to use the aiosurreal client."""
+      """Example of how to use the aiosurrealdb client."""
       async with Surreal("ws://localhost:8000/rpc") as db:
           await db.signin({"user": "root", "pass": "root"})
           await db.use("test", "test")
