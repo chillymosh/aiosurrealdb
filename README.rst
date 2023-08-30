@@ -37,7 +37,7 @@ Getting Started
   
   
   async def main():
-      """Example of how to use the SurrealDB client."""
+      """Example of how to use the aiosurreal client."""
       async with Surreal("ws://localhost:8000/rpc") as db:
           await db.signin({"user": "root", "pass": "root"})
           await db.use("test", "test")
