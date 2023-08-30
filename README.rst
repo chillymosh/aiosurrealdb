@@ -65,7 +65,7 @@ Getting Started
           print(await db.delete("person"))
   
           # You can also use the query method
-          # doing all of the above and more in SurrealQl
+          # doing all of the above and more in SurrealQL
   
           # In SurrealQL you can do a direct insert
           # and the table will be created if it doesn't exist
