@@ -2,7 +2,7 @@
 
 aiosurrealdb is a fully asynchronous version of the SurrealDB driver that uses aiohttp.
   
-The reason behind using aiohttp is that many modern async frameworks and libraries, especially for bots, such as those for Discord, already have aiohttp installed as a dependency. So it made more sense to utilise an already installed library and most likely an already exisitng ClientSession.
+The reason behind using aiohttp is that many modern async frameworks and libraries, especially for bots, such as those for Discord, already have aiohttp installed as a dependency. So it made more sense to utilise an already installed library and most likely an already exisitng ClientSession. The websocket has more functionality than the HTTP REST API, such as updating records by the table name. This is a currently a limitation of SurrealDB itself and will return a 405 error.
 
 **Connection Methods**
 
