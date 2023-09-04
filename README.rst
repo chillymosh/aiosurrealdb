@@ -1,4 +1,4 @@
-# aiosurrealdb
+.. image:: https://github.com/chillymosh/aiosurrealdb/blob/dev/docs/aiosurrealdb_logo_dark.png
 
 aiosurrealdb is a fully asynchronous version of the SurrealDB driver that uses aiohttp.
   
